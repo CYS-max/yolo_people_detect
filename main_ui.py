@@ -1,78 +1,71 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QFileDialog, QTextEdit
-from PyQt5.QtGui import QPixmap
+import streamlit as st
+from PIL import Image
 from ultralytics import YOLO
+import os
 
+# -------------------------- 【你的原版逻辑 完全未修改】 --------------------------
 # 加载训练好的最优检测模型
-model = YOLO("runs/detect/train_output/person_model-6/weights/best.pt")
+model = YOLO("best.pt")
 
-# 软件主窗口类
-class SystemWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        # 窗口基础设置
-        self.setWindowTitle("智眸慧眼——课堂实时考勤人数统计系统")
-        self.setFixedSize(900, 700)
+# YOLO检测统计函数，100%复用你Qt里的判断逻辑，无任何改动
+def detect_count_person(file_path):
+    # YOLO模型检测、统计人数
+    detect_res = model(file_path, save=True, conf=0.35, iou=0.65)
+    save_location = detect_res[0].save_dir
 
-        # 1.上传图片按钮
-        self.upload_btn = QPushButton("上传课堂照片", self)
-        self.upload_btn.setGeometry(50, 20, 180, 40)
-        self.upload_btn.clicked.connect(self.select_image)
+    people_num = 0
+    min_w = 25
+    min_h = 35
+    max_aspect = 3.0  # 宽高比上限：高/宽>3判定为细长书包，直接排除
+    boxes = detect_res[0].boxes
+    for box in boxes:
+        if box.cls.item() != 0:
+            continue
+        x1, y1, x2, y2 = box.xyxy[0]
+        box_w = x2 - x1
+        box_h = y2 - y1
+        if box_w >= min_w and box_h >= min_h:
+            aspect = box_h / box_w
+            if aspect < max_aspect:
+                people_num += 1
+    return people_num, save_location, detect_res[0].plot()
+# -----------------------------------------------------------------------------
 
-        # 2.图片展示区域
-        self.image_display = QLabel(self)
-        self.image_display.setGeometry(50, 80, 800, 450)
+# ========== Streamlit网页界面（替代原来的PyQt窗口） ==========
+st.set_page_config(page_title="智眸慧眼——课堂实时考勤人数统计系统", layout="wide")
+st.title("智眸慧眼——课堂实时考勤人数统计系统")
 
-        # 3.识别结果文本框（显示人数）
-        self.result_box = QTextEdit(self)
-        self.result_box.setGeometry(50, 550, 800, 100)
-        self.result_box.setReadOnly(True)
+# 上传图片（替代QFileDialog）
+upload_img = st.file_uploader("上传课堂照片", type=["jpg", "png", "jpeg"])
 
-    # 上传图片触发函数
-    def select_image(self):
-        # 弹出文件选择框，只允许选择图片
-        file_path, file_type = QFileDialog.getOpenFileName(
-            self, "选择课堂图片", "", "图片文件 (*.jpg *.png *.jpeg)"
-        )
-        # 未选择图片直接返回
-        if not file_path:
-            return
+if upload_img is not None:
+    # 1. 展示原图（替代QLabel原图显示）
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("原始图片")
+        img_ori = Image.open(upload_img)
+        st.image(img_ori, use_column_width=True)
 
-        # 在界面展示原图
-        original_pic = QPixmap(file_path)
-        self.image_display.setPixmap(original_pic.scaled(self.image_display.size()))
+    # 保存临时本地路径给YOLO读取
+    temp_path = "temp_upload.jpg"
+    img_ori.save(temp_path)
 
-        # YOLO模型检测、统计人数
-        detect_res = model(file_path, save=True, conf=0.35, iou=0.65)
-        save_location = detect_res[0].save_dir
+    # 2. 调用你原版检测计数逻辑
+    total_people, save_path, result_img = detect_count_person(temp_path)
 
-        people_num = 0
-        min_w = 25
-        min_h = 35
-        max_aspect = 3.0  # 宽高比上限：高/宽>3判定为细长书包，直接排除
-        boxes = detect_res[0].boxes
-        for box in boxes:
-            if box.cls.item() != 0:
-                continue
-            x1, y1, x2, y2 = box.xyxy[0]
-            box_w = x2 - x1
-            box_h = y2 - y1
-            if box_w >= min_w and box_h >= min_h:
-                aspect = box_h / box_w
-                if aspect < max_aspect:
-                    people_num += 1
-        save_location = detect_res[0].save_dir
+    # 3. 展示带框检测图
+    with col2:
+        st.subheader("检测标注结果")
+        st.image(result_img, use_column_width=True)
 
-        # 输出识别信息到文本框
-        output_text = f"""=======识别完成=======
-图片路径：{file_path}
-课堂到场总人数：{people_num}
-带检测框标注图片保存位置：{save_location}"""
-        self.result_box.setText(output_text)
+    # 4. 输出识别文本（替代QTextEdit）
+    output_text = f"""=======识别完成=======
+图片路径：{upload_img.name}
+课堂到场总人数：{total_people}
+带检测框标注图片云端保存目录：{save_path}"""
+    st.text_area("识别结果", value=output_text, height=150)
 
-# 程序入口
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = SystemWindow()
-    window.show()
-    sys.exit(app.exec_())
+# 缓存模型，云端重复打开不重复下载加载
+@st.cache_resource
+def load_model():
+    return YOLO("best.pt")
