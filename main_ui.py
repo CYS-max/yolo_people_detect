@@ -14,9 +14,9 @@ def detect_count_person(file_path):
     save_location = detect_res[0].save_dir
 
     people_num = 0
-    min_w = 25
-    min_h = 35
-    max_aspect = 3.0  # 宽高比上限：高/宽>3判定为细长书包，直接排除
+    min_w = 12
+    min_h = 15
+    max_aspect = 4.5 # 宽高比上限：高/宽>3判定为细长书包，直接排除
     boxes = detect_res[0].boxes
     for box in boxes:
         if box.cls.item() != 0:
