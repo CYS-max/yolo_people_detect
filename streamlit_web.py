@@ -1,10 +1,18 @@
 # streamlit_web.py（仅修改单图、视频模块，其余不变）
+import os
+# =========【新增：全部import最顶部，强制无头环境，解决libgthread报错】=========
+os.environ["QT_QPA_PLATFORM"] = "offscreen"
+os.environ["OPENCV_IO_ENABLE_OPENGL"] = "0"
+os.environ["ULTRALYTICS_HIDE_CONSOLE"] = "1"
+os.environ['MATPLOTLIB_BACKEND'] = 'Agg'
+# =========================================================================
+
 import streamlit as st
 import pandas as pd
 from core.detect_engine import single_image_detect,batch_folder_detect,video_detect
 from utils.class_tool import load_class_info,calc_absent_rate
 from utils.excel_export import export_attendance_excel
-import tempfile,os
+import tempfile
 
 st.title("智眸慧眼—基于YOLO26人数统计系统")
 class_list = list(load_class_info().keys())
