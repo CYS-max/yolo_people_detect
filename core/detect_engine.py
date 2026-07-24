@@ -3,7 +3,7 @@ import cv2
 import os
 from core import config
 
-model = YOLO(r"D:\PythonProject2\weights\best.pt")
+model = YOLO("best.pt")
 
 def single_image_detect(img_path, conf=config.DEFAULT_CONF, iou=config.DEFAULT_IOU):
     """单图检测+返回带框标注图"""
