@@ -1,10 +1,10 @@
-numpy==1.26.4
+streamlit>=1.38
 torch==2.4.1
 torchvision==0.19.1
+numpy==1.26.4
 opencv-python-headless==4.9.0.80
-ultralytics==8.2.90
-lapx>=0.5.12
-xlsxwriter
 pillow
 matplotlib
-streamlit
+lapx
+# 关键：降低ultralytics版本！新版本强化系统依赖，旧版依赖更宽松
+ultralytics==8.0.180
