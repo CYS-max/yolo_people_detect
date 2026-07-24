@@ -1,9 +1,10 @@
-streamlit
-ultralytics==8.3.20
-pillow
-numpy
+numpy==1.26.4
+torch==2.4.1
+torchvision==0.19.1
 opencv-python-headless==4.9.0.80
-torch
-torchvision
+ultralytics==8.2.90
+lapx>=0.5.12
 xlsxwriter
-lap>=0.5.2
+pillow
+matplotlib
+streamlit
