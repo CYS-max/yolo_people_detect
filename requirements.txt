@@ -1,6 +1,6 @@
 numpy==1.26.4
-torch==2.6.0
-torchvision==0.21.0
+torch==2.4.1
+torchvision==0.19.1
 opencv-python-headless==4.9.0.80
 ultralytics==8.2.90
 lapx>=0.5.12
