@@ -8,3 +8,4 @@ matplotlib
 lapx
 # 关键：降低ultralytics版本！新版本强化系统依赖，旧版依赖更宽松
 ultralytics==8.0.180
+pandas
